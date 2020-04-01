@@ -23,6 +23,7 @@ add_service_files(
   FILES
   ForwardKinematics.srv
   InverseKinematics.srv
+  TaskSpaceKinematics.srv
 )
 
 generate_messages(

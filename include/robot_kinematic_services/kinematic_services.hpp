@@ -3,6 +3,7 @@
 
 #include <robot_kinematic_services/ForwardKinematics.h>
 #include <robot_kinematic_services/InverseKinematics.h>
+#include <robot_kinematic_services/TaskSpaceKinematics.h>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <generic_control_toolbox/kdl_manager.hpp>
@@ -22,7 +23,9 @@ class KinematicServices
   bool ikCallback(InverseKinematics::Request& req,
                   InverseKinematics::Response& res);
   bool fkCallback(ForwardKinematics::Request& req,
-                  ForwardKinematics::Response& res);
+                  ForwardKinematics::Response& res);  
+  bool tsCallback(TaskSpaceKinematics::Request& req,
+                  TaskSpaceKinematics::Response& res);
   void stateCallback(const sensor_msgs::JointState::ConstPtr& msg);
 
  private:

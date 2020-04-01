@@ -139,7 +139,52 @@ bool KinematicServices::fkCallback(ForwardKinematics::Request& req,
   res.status.code = res.status.SUCCESS;
   return true;
 }
+// ---------------------------------------my code starts here----------------------------------------------
+bool KinematicServices::tsCallback(TaskSpaceKinematics::Request& req,
+                                   TaskSpaceKinematics::Response& res)
+{
+  if (!processRequestCommon(req.chain_end_effector_name, req.tooltip_name)) // this check should be same as in fk
+  {
+    res.status.code = res.status.INPUT_FAILURE;
+    return true;
+  }
 
+//initialize data
+  KDL::Frame pose; 
+  KDL::Vector desired_position, error;
+  KDL::JntArray q_dot(7);
+  KDL::Twist command_vel = KDL::Twist::Zero();
+  sensor_msgs::JointState command;
+
+  if (!kdl_manager_->getGrippingPoint(req.chain_end_effector_name, req.state, // this one also
+                                      pose))
+  {
+    res.status.code = res.status.IK_FAILURE;
+    return true;
+  }
+// computation of task space
+  desired_position.x(req.goal_pose.position.x);
+  desired_position.y(req.goal_pose.position.y);
+  desired_position.z(req.goal_pose.position.z);
+  
+  if(kdl_manager_->getEefPose(req.chain_end_effector_name, req.state, pose))
+ 		{
+			error = desired_position - pose.p;
+			command_vel.vel = req.kp*error;
+			ROS_INFO_THROTTLE(req.kp, "Position error: (%.2f, %.2f, %.2f)", error.x(), error.y(), error.z());
+
+			kdl_manager_->getVelIK(req.chain_end_effector_name, req.state, command_vel, q_dot);
+			command = req.state;
+			kdl_manager_->getJointState(req.chain_end_effector_name, q_dot.data, command);
+		}
+
+  res.ts_solution = command;  
+  res.ts_solution.header.frame_id = req.tooltip_name;
+  res.ts_solution.header.stamp = ros::Time::now();
+  res.status.code = res.status.SUCCESS;
+  return true;
+}
+// -------------------------------------------my code ends here -----------------------------------------------
 bool KinematicServices::processRequestCommon(const std::string& eef,
                                              const std::string& grip_point)
 {
@@ -185,6 +230,9 @@ int main(int argc, char** argv)
       &service_handler);
   ros::ServiceServer fk_server = nh.advertiseService(
       "/compute_fk", &robot_kinematic_services::KinematicServices::fkCallback,
+      &service_handler);
+  ros::ServiceServer ts_server = nh.advertiseService( // added
+      "/compute_ts", &robot_kinematic_services::KinematicServices::tsCallback,
       &service_handler);
 
   ROS_INFO("Kinematic services node is ready");

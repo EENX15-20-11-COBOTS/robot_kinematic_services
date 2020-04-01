@@ -1,0 +1,8 @@
+string chain_end_effector_name
+string tooltip_name
+float64 kp
+sensor_msgs/JointState state
+geometry_msgs/Pose goal_pose
+---
+robot_kinematic_services/SolverStatus status
+sensor_msgs/JointState ts_solution
